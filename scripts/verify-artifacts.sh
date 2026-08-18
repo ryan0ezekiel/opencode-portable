@@ -16,7 +16,9 @@ PLATFORM="${3:-}"
 
 command -v jq >/dev/null || { echo "error: jq is required" >&2; exit 1; }
 
-KEY_FILTER=""
+# Empty platform filter means "all platforms"; the jq program must stay
+# valid either way, so default to the identity filter.
+KEY_FILTER="."
 if [ -n "$PLATFORM" ]; then
   case "$PLATFORM" in
     linux-x64)   KEY_FILTER='select(. == "linux/amd64")' ;;
@@ -29,10 +31,14 @@ if [ -n "$PLATFORM" ]; then
   esac
 fi
 
+[ -d "$DIR" ] || { echo "error: directory not found ($DIR)" >&2; exit 1; }
+
+CHECKED=0
 FAIL=0
 
 check() {
   local name="$1" path="$2" sha="$3"
+  CHECKED=$((CHECKED + 1))
   if [ ! -f "$path" ]; then
     echo "MISSING $name ($path)"
     FAIL=1
@@ -68,4 +74,8 @@ if [ "$FAIL" -ne 0 ]; then
   echo "==> verification FAILED"
   exit 1
 fi
-echo "==> all artifacts verified"
+if [ "$CHECKED" -eq 0 ]; then
+  echo "==> verification FAILED: nothing was checked (no matching manifest entries)"
+  exit 1
+fi
+echo "==> all artifacts verified ($CHECKED files)"

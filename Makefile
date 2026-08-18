@@ -12,7 +12,10 @@ fetch:
 	done
 
 verify:
-	./scripts/verify-artifacts.sh dist/staging
+	@for p in linux-x64 linux-arm64 windows-x64 windows-arm64 macos-x64 macos-arm64; do \
+		echo "==> verifying $$p"; \
+		./scripts/verify-artifacts.sh dist/staging/$$p internal/app/default.json $$p || exit 1; \
+	done
 
 package:
 	@for p in linux-x64 linux-arm64 windows-x64 windows-arm64 macos-x64 macos-arm64; do \
