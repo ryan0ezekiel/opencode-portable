@@ -35,7 +35,8 @@ trap 'rm -rf "$TMPDIR_WORK"' EXIT
 
 fetch_json() {
     local url="$1"
-    curl -fsSL -H "Accept: application/vnd.github+json" -H "User-Agent: OpenCodePortable-manifest" "$url"
+    curl -fsSL --connect-timeout 30 --max-time 120 --retry 3 \
+        -H "Accept: application/vnd.github+json" -H "User-Agent: OpenCodePortable-manifest" "$url"
 }
 
 latest_tag() {
@@ -146,17 +147,29 @@ runtime_variant() { # <platform> <name> <artifact> <libc> <minlibc> <cpu> <note>
         echo "          \"sha256\": \"$sha\","
         echo "          \"size\": $size,"
         echo "          \"archive\": \"$archive\","
-        if [[ -n "$libc" || -n "$minlibc" || -n "$cpu" ]]; then
-            echo "          \"binary\": \"$binary\","
-            echo "          \"requires\": {"
-            [[ -n "$libc" ]]   && echo "            \"libc\": \"$libc\","
-            [[ -n "$minlibc" ]] && echo "            \"min_libc\": \"$minlibc\","
-            [[ -n "$cpu" ]]    && echo "            \"cpu\": [\"$cpu\"],"
-            [[ -n "$note" ]]   && echo "            \"note\": \"$note\""
-            echo "          }"
-        else
-            echo "          \"binary\": \"$binary\""
-        fi
+    # Assemble requires fields with explicit comma handling: any subset of
+    # libc/min_libc/cpu/note may be present, and the JSON must stay valid.
+    local req_fields=()
+    [[ -n "$libc" ]]    && req_fields+=("\"libc\": \"$libc\"")
+    [[ -n "$minlibc" ]] && req_fields+=("\"min_libc\": \"$minlibc\"")
+    [[ -n "$cpu" ]]     && req_fields+=("\"cpu\": [\"$cpu\"]")
+    [[ -n "$note" ]]    && req_fields+=("\"note\": \"$note\"")
+    if [[ ${#req_fields[@]} -gt 0 ]]; then
+        echo "          \"binary\": \"$binary\","
+        echo "          \"requires\": {"
+        local first=1
+        for f in "${req_fields[@]}"; do
+            if [[ $first -eq 1 ]]; then
+                echo "            $f"
+                first=0
+            else
+                echo "            ,$f"
+            fi
+        done
+        echo "          }"
+    else
+        echo "          \"binary\": \"$binary\""
+    fi
         echo "        },"
     }
 }
@@ -218,7 +231,7 @@ tool_entry() { # <platform> <name> <cache> <tag> <artifact> <archive> <rootdir> 
     if [[ -z "$sha" ]]; then
         echo "  !! $platform/$name: no API digest; hashing locally" >&2
         local tmp="$TMPDIR_WORK/$artifact"
-        if ! curl -fsSL -o "$tmp" "$url" 2>/dev/null; then
+        if ! curl -fsSL --connect-timeout 30 --max-time 1200 --retry 3 -o "$tmp" "$url" 2>/dev/null; then
             echo "  !! $platform/$name: cannot download $artifact" >&2
             return 1
         fi

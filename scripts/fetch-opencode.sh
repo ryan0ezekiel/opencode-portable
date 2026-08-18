@@ -44,7 +44,7 @@ fetch() {
     echo "    $what present but digest mismatch, re-downloading..."
     rm -f "$path"
   fi
-  curl -fL --retry 3 -o "$path" "$url"
+  curl -fL --retry 3 --connect-timeout 30 --max-time 1200 -o "$path" "$url"
   echo "$sha  $path" | sha256sum -c - >/dev/null \
     || { echo "error: downloaded $what digest mismatch" >&2; exit 1; }
   echo "    $what fetched and verified"

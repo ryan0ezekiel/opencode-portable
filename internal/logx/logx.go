@@ -149,7 +149,7 @@ func (l *Logger) log(level Level, format string, args ...any) {
 	if level < l.level {
 		return
 	}
-	line := fmt.Sprintf("%s [%s] %s\n", time.Now().Format(time.RFC3339), level, fmt.Sprintf(format, args...))
+	line := fmt.Sprintf("%s [%s] %s\n", time.Now().Format(time.RFC3339), level, Sanitize(fmt.Sprintf(format, args...)))
 	if l.verbose {
 		_, _ = io.WriteString(os.Stderr, line)
 	}
@@ -160,19 +160,23 @@ func (l *Logger) log(level Level, format string, args ...any) {
 	_ = l.file.Sync()
 }
 
+// sanitizePatterns are compiled once; Sanitize is applied to every log line
+// as defense in depth against accidental credential leakage.
+var sanitizePatterns = []*regexp.Regexp{
+	regexp.MustCompile(`sk-[A-Za-z0-9_-]{12,}`),
+	regexp.MustCompile(`sk-ant-[A-Za-z0-9_-]{12,}`),
+	regexp.MustCompile(`Bearer [A-Za-z0-9._-]{12,}`),
+	regexp.MustCompile(`gh[pousr]_[A-Za-z0-9]{20,}`),
+	regexp.MustCompile(`xox[baprs]-[A-Za-z0-9-]{10,}`),
+	regexp.MustCompile(`api[_-]?key["']?\s*[:=]\s*["']?[A-Za-z0-9._-]{12,}`),
+}
+
 // Sanitize removes common secret patterns from a message. It is defensive:
 // callers should avoid logging sensitive material entirely, but this catches
 // accidental leakage of common credential formats.
 func Sanitize(s string) string {
-	for _, pat := range []string{
-		`sk-[A-Za-z0-9_-]{12,}`,
-		`sk-ant-[A-Za-z0-9_-]{12,}`,
-		`Bearer [A-Za-z0-9._-]{12,}`,
-		`gh[pousr]_[A-Za-z0-9]{20,}`,
-		`xox[baprs]-[A-Za-z0-9-]{10,}`,
-		`api[_-]?key["']?\s*[:=]\s*["']?[A-Za-z0-9._-]{12,}`,
-	} {
-		s = regexp.MustCompile(pat).ReplaceAllString(s, "[REDACTED]")
+	for _, re := range sanitizePatterns {
+		s = re.ReplaceAllString(s, "[REDACTED]")
 	}
 	return s
 }

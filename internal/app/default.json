@@ -13,8 +13,8 @@
           "archive": "zip",
           "binary": "opencode.exe",
           "requires": {
-            "cpu": ["avx2"],
-            "note": "modern CPU builds"
+            "cpu": ["avx2"]
+            ,"note": "modern CPU builds"
           }
         },
         {
@@ -24,7 +24,10 @@
           "sha256": "66ad3d31bdc48d7cf16e212da21449bdfe34656cf83a56f682a211c8b78d30ba",
           "size": 60504745,
           "archive": "zip",
-          "binary": "opencode.exe"
+          "binary": "opencode.exe",
+          "requires": {
+            "note": "older CPU builds"
+          }
         }
       ] },
       "windows/arm64": { "variants": [
@@ -35,7 +38,10 @@
           "sha256": "0d34d837ea3b5e10349d8550318083040a8b4c061d3faaa4eabd339984aa49b0",
           "size": 58669300,
           "archive": "zip",
-          "binary": "opencode.exe"
+          "binary": "opencode.exe",
+          "requires": {
+            "note": "arm64 builds"
+          }
         }
       ] },
       "linux/amd64": { "variants": [
@@ -48,10 +54,10 @@
           "archive": "tar.gz",
           "binary": "opencode",
           "requires": {
-            "libc": "glibc",
-            "min_libc": "2.17",
-            "cpu": ["avx2"],
-            "note": "modern CPU, glibc"
+            "libc": "glibc"
+            ,"min_libc": "2.17"
+            ,"cpu": ["avx2"]
+            ,"note": "modern CPU, glibc"
           }
         },
         {
@@ -63,9 +69,9 @@
           "archive": "tar.gz",
           "binary": "opencode",
           "requires": {
-            "libc": "glibc",
-            "min_libc": "2.17",
-            "note": "older CPU, glibc"
+            "libc": "glibc"
+            ,"min_libc": "2.17"
+            ,"note": "older CPU, glibc"
           }
         },
         {
@@ -77,9 +83,9 @@
           "archive": "tar.gz",
           "binary": "opencode",
           "requires": {
-            "libc": "musl",
-            "cpu": ["avx2"],
-            "note": "self-contained, any libc"
+            "libc": "musl"
+            ,"cpu": ["avx2"]
+            ,"note": "self-contained, any libc"
           }
         },
         {
@@ -91,8 +97,8 @@
           "archive": "tar.gz",
           "binary": "opencode",
           "requires": {
-            "libc": "musl",
-            "note": "self-contained, older CPU"
+            "libc": "musl"
+            ,"note": "self-contained, older CPU"
           }
         }
       ] },
@@ -106,9 +112,9 @@
           "archive": "tar.gz",
           "binary": "opencode",
           "requires": {
-            "libc": "glibc",
-            "min_libc": "2.17",
-            "note": "glibc"
+            "libc": "glibc"
+            ,"min_libc": "2.17"
+            ,"note": "glibc"
           }
         },
         {
@@ -120,8 +126,8 @@
           "archive": "tar.gz",
           "binary": "opencode",
           "requires": {
-            "libc": "musl",
-            "note": "self-contained, any libc"
+            "libc": "musl"
+            ,"note": "self-contained, any libc"
           }
         }
       ] },
@@ -135,8 +141,8 @@
           "archive": "zip",
           "binary": "opencode",
           "requires": {
-            "cpu": ["avx2"],
-            "note": "modern Intel CPUs"
+            "cpu": ["avx2"]
+            ,"note": "modern Intel CPUs"
           }
         },
         {
@@ -146,7 +152,10 @@
           "sha256": "c029941795f9cf55cfdbc5b0e105db4300413718d489e8e47c950d1a2e126eed",
           "size": 48261294,
           "archive": "zip",
-          "binary": "opencode"
+          "binary": "opencode",
+          "requires": {
+            "note": "older Intel CPUs"
+          }
         }
       ] },
       "darwin/arm64": { "variants": [
@@ -157,7 +166,10 @@
           "sha256": "7d668bf26496fec8686d4e51ebb1ac2bd2e393f0c1620aa696c4c242a9e5806a",
           "size": 46059142,
           "archive": "zip",
-          "binary": "opencode"
+          "binary": "opencode",
+          "requires": {
+            "note": "Apple Silicon"
+          }
         }
       ] }
   },

@@ -51,7 +51,8 @@ cp "$MANIFEST" "$OUT/manifest.json"
 mkdir -p "$OUT/config" "$OUT/data" "$OUT/cache" "$OUT/logs" "$OUT/downloads"
 
 # Pre-populated runtime (best variant for this platform), if staged.
-V=$(jq -r --arg k "$KEY" '.runtimes[$k].variants[0]' "$MANIFEST")
+V=$(jq -r --arg k "$KEY" '.runtimes[$k].variants[0]' "$MANIFEST") \
+  || { echo "error: no runtime variants for $KEY in $MANIFEST" >&2; exit 1; }
 ART=$(jq -r '.artifact' <<<"$V")
 BIN=$(jq -r '.binary' <<<"$V")
 VNAME=$(jq -r '.name' <<<"$V")

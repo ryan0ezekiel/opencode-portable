@@ -172,9 +172,18 @@ func Run(args []string) int {
 		return runDiagnose(caps, m, info, cfg)
 	}
 
-	// 7. --update.
+	// 7. --update. Never in --dry-run mode: dry-run promises no side
+	// effects, and an update downloads, installs and persists state.
 	if opts.Update {
-		return runUpdate(info, m, caps, opts, logger)
+		if opts.DryRun {
+			fmt.Fprintln(os.Stderr, "OpenCode Portable: note: --update is ignored in --dry-run mode")
+			logger.Warn("--update ignored in --dry-run mode")
+		} else {
+			return runUpdate(info, m, caps, opts, logger)
+		}
+	} else if opts.UpdateAll {
+		fmt.Fprintln(os.Stderr, "OpenCode Portable: note: --all-platforms has no effect without --update")
+		logger.Warn("--all-platforms ignored without --update")
 	}
 
 	// 8. Unsupported platform: clean error, never a stack trace.
