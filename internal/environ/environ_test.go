@@ -55,6 +55,37 @@ func TestBuildToolDirsPrepended(t *testing.T) {
 	}
 }
 
+// TestBuildRespectsWindowsPathKey verifies that a Windows-style "Path"
+// environment key (the conventional spelling on Windows) is resolved
+// case-insensitively: the child must get ONE PATH entry, with the USB tool
+// directories prepended, never a duplicate "Path"/"PATH" pair with undefined
+// precedence.
+func TestBuildRespectsWindowsPathKey(t *testing.T) {
+	p := New("/usb")
+	base := []string{
+		"Path=C:\\Windows\\System32;C:\\Windows",
+		"SystemRoot=C:\\Windows",
+	}
+	env := p.Build(base, []string{`/usb/tools/git/cmd`})
+	got := map[string]string{}
+	for _, kv := range env {
+		if i := strings.IndexByte(kv, '='); i > 0 {
+			got[kv[:i]] = kv[i+1:]
+		}
+	}
+	want := `/usb/tools/git/cmd` + string(os.PathListSeparator) + `C:\Windows\System32;C:\Windows`
+	if got["Path"] != want {
+		t.Errorf("Path = %q, want %q", got["Path"], want)
+	}
+	if _, dup := got["PATH"]; dup {
+		t.Error("duplicate PATH entry must not exist")
+	}
+	// Host PATH must never be lost when tools are prepended.
+	if !strings.Contains(got["Path"], "System32") {
+		t.Errorf("host Path entries missing: %q", got["Path"])
+	}
+}
+
 func TestDedupPath(t *testing.T) {
 	sep := string(os.PathListSeparator)
 	in := "/a" + sep + "/b" + sep + "/a" + sep + "/c" + sep + "/b"

@@ -57,7 +57,18 @@ func (p *Portable) Build(base []string, toolDirs []string) []string {
 		}
 	}
 
+	// Resolve the PATH key case-insensitively: Windows environments use
+	// "Path" by convention (os.Environ preserves the original spelling),
+	// and a case-sensitive lookup would miss it — leaving both the host
+	// "Path" and a new "PATH" entry in the child's environment with
+	// undefined precedence.
 	pathVar := "PATH"
+	for k := range env {
+		if strings.EqualFold(k, "PATH") {
+			pathVar = k
+			break
+		}
+	}
 	pathVal := env[pathVar]
 
 	switch runtime.GOOS {

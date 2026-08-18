@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestDownloadCacheSkip verifies that an existing verified artifact is
@@ -160,6 +161,33 @@ func TestExtractZipRejectsTraversal(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dest, "..", "evil.txt")); !os.IsNotExist(err) {
 		t.Fatal("evil file escaped the destination")
+	}
+}
+
+func TestCleanupStaleParts(t *testing.T) {
+	dir := t.TempDir()
+	old := filepath.Join(dir, "old.part")
+	_ = os.WriteFile(old, []byte("x"), 0o644)
+	fresh := filepath.Join(dir, "fresh.part")
+	_ = os.WriteFile(fresh, []byte("y"), 0o644)
+	keep := filepath.Join(dir, "artifact.tar.gz")
+	_ = os.WriteFile(keep, []byte("z"), 0o644)
+
+	// Age the old file beyond the horizon.
+	twoHoursAgo := time.Now().Add(-2 * time.Hour)
+	_ = os.Chtimes(old, twoHoursAgo, twoHoursAgo)
+
+	if n := CleanupStaleParts(dir, 30*time.Minute); n != 1 {
+		t.Fatalf("removed %d files, want 1", n)
+	}
+	if _, err := os.Stat(old); !os.IsNotExist(err) {
+		t.Error("old .part should have been removed")
+	}
+	if _, err := os.Stat(fresh); err != nil {
+		t.Error("fresh .part must be kept (could be an active download)")
+	}
+	if _, err := os.Stat(keep); err != nil {
+		t.Error("non-.part files must never be touched")
 	}
 }
 

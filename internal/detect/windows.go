@@ -3,11 +3,13 @@
 package detect
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
@@ -94,7 +96,11 @@ func (c *HostCapabilities) detectGPU() {
 	if _, err := exec.LookPath("powershell.exe"); err != nil {
 		return
 	}
-	out, err := exec.Command("powershell.exe", "-NoProfile", "-Command",
+	// PowerShell startup can be slow on cold machines; bound it so host
+	// detection can never hang the launcher.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-Command",
 		"(Get-CimInstance Win32_VideoController | Select-Object -First 1).Name").Output()
 	if err != nil {
 		return

@@ -192,6 +192,27 @@ func (d *Downloader) Download(ctx context.Context, url, destPath string, expecte
 	return os.Rename(part, destPath)
 }
 
+// CleanupStaleParts removes incomplete download remnants (*.part) older
+// than olderThan. A live download cannot be older than MaxDownloadTime by
+// definition, so age-based cleanup never races an active download; it only
+// reclaims files left behind by interrupted runs.
+func CleanupStaleParts(dir string, olderThan time.Duration) int {
+	matches, err := filepath.Glob(filepath.Join(dir, "*.part"))
+	if err != nil {
+		return 0
+	}
+	cutoff := time.Now().Add(-olderThan)
+	removed := 0
+	for _, m := range matches {
+		if fi, err := os.Stat(m); err == nil && fi.ModTime().Before(cutoff) {
+			if os.Remove(m) == nil {
+				removed++
+			}
+		}
+	}
+	return removed
+}
+
 // VerifySHA256 checks a file against an expected digest.
 func VerifySHA256(path, expected string) error {
 	if expected == "" {

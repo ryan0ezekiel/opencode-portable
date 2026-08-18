@@ -81,20 +81,22 @@ func Detect(usbInfo usb.Info) (HostCapabilities, error) {
 	// Platform-specific: OS version, kernel, libc, RAM, CPU, GPU.
 	c.detectPlatform()
 
-	// Host tool detection: versions only; presence is not required.
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	detectTool(ctx, &c.HasGit, &c.GitVersion, gitVerRe, "git", "--version")
-	detectTool(ctx, &c.HasRipgrep, &c.RipgrepVersion, rgVerRe, "rg", "--version")
-	detectTool(ctx, &c.HasNode, &c.NodeVersion, nodeVerRe, "node", "--version")
-	detectTool(ctx, &c.HasBun, &c.BunVersion, bunVerRe, "bun", "--version")
+	// Host tool detection: versions only; presence is not required. Each
+	// probe gets its own budget so a hung tool (a broken shim, a stuck
+	// shell wrapper) cannot starve the other probes.
+	detectTool(&c.HasGit, &c.GitVersion, gitVerRe, 5*time.Second, "git", "--version")
+	detectTool(&c.HasRipgrep, &c.RipgrepVersion, rgVerRe, 5*time.Second, "rg", "--version")
+	detectTool(&c.HasNode, &c.NodeVersion, nodeVerRe, 5*time.Second, "node", "--version")
+	detectTool(&c.HasBun, &c.BunVersion, bunVerRe, 5*time.Second, "bun", "--version")
 
 	return c, nil
 }
 
 // detectTool runs a version probe for an optional host tool. Failures simply
 // leave the booleans false.
-func detectTool(ctx context.Context, has *bool, ver *string, re *regexp.Regexp, name string, args ...string) {
+func detectTool(has *bool, ver *string, re *regexp.Regexp, timeout time.Duration, name string, args ...string) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 	cmd := exec.CommandContext(ctx, name, args...)
 	out, err := cmd.Output()
 	if err != nil {

@@ -62,6 +62,25 @@ func TestParseRejectsMissingPlatforms(t *testing.T) {
 	}
 }
 
+func TestParseRejectsNonHexDigest(t *testing.T) {
+	// 64 chars but not hex: previously accepted by the length check alone,
+	// then failing confusingly at every download verification.
+	bad := "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+	rt := `{"variants":[{"name":"native","artifact":"a.tar.gz","url":"https://e/a.tar.gz","sha256":"` + bad + `","size":1,"archive":"tar.gz","binary":"opencode"}]}`
+	doc := `{"schema_version":1,"opencode_version":"v1.0.0","source":"x","runtimes":{"linux/amd64":` + rt + `},"tools":{}}`
+	if _, err := Parse([]byte(doc)); err == nil {
+		t.Fatal("expected error for non-hex sha256")
+	}
+}
+
+func TestParseRejectsNegativeSize(t *testing.T) {
+	rt := `{"variants":[{"name":"native","artifact":"a.tar.gz","url":"https://e/a.tar.gz","sha256":"` + tSHA + `","size":-1,"archive":"tar.gz","binary":"opencode"}]}`
+	doc := `{"schema_version":1,"opencode_version":"v1.0.0","source":"x","runtimes":{"linux/amd64":` + rt + `},"tools":{}}`
+	if _, err := Parse([]byte(doc)); err == nil {
+		t.Fatal("expected error for negative size")
+	}
+}
+
 func TestSaveRoundTrip(t *testing.T) {
 	// Build a minimal manifest covering every supported platform.
 	rt := `{"variants":[{"name":"native","artifact":"a.tar.gz","url":"https://e/a.tar.gz","sha256":"` + tSHA + `","size":1,"archive":"tar.gz","binary":"opencode"}]}`

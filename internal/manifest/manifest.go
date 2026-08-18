@@ -10,6 +10,7 @@
 package manifest
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -158,10 +159,24 @@ func (v *Variant) validate() error {
 	if v.Binary == "" {
 		return errors.New("variant missing binary name")
 	}
-	if len(v.SHA256) != 64 {
+	if !validSHA256(v.SHA256) {
 		return errors.New("variant sha256 must be 64 hex chars")
 	}
+	if v.Size < 0 {
+		return errors.New("variant has negative size")
+	}
 	return nil
+}
+
+// validSHA256 reports whether s is a well-formed lowercase or uppercase hex
+// SHA-256 digest. A malformed digest would pass a length check alone, then
+// fail confusingly at every download verification.
+func validSHA256(s string) bool {
+	if len(s) != 64 {
+		return false
+	}
+	_, err := hex.DecodeString(s)
+	return err == nil
 }
 
 func (t *Tool) validate() error {
@@ -174,8 +189,11 @@ func (t *Tool) validate() error {
 	if t.Binary == "" {
 		return errors.New("tool missing binary name")
 	}
-	if len(t.SHA256) != 64 {
+	if !validSHA256(t.SHA256) {
 		return errors.New("tool sha256 must be 64 hex chars")
+	}
+	if t.Size < 0 {
+		return errors.New("tool has negative size")
 	}
 	return nil
 }

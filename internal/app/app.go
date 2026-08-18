@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"opencode-portable/internal/acquire"
 	"opencode-portable/internal/detect"
@@ -151,6 +152,12 @@ func Run(args []string) int {
 	logger := logx.New(filepath.Join(info.Root, layout.LogsDir), parseLogLevel(cfg.LogLevel), verbose)
 	defer logger.Close()
 	logger.Info("OpenCode Portable %s starting (os=%s arch=%s root=%s)", version.String(), runtime.GOOS, runtime.GOARCH, info.Root)
+	// Reclaim disk space left by interrupted downloads from previous runs.
+	// Age-based cleanup cannot race an active download (a live download is
+	// bounded by acquire.MaxDownloadTime, far below the cleanup horizon).
+	if n := acquire.CleanupStaleParts(filepath.Join(info.Root, layout.DownloadsDir), 30*time.Minute); n > 0 {
+		logger.Warn("removed %d stale partial download(s)", n)
+	}
 	if verr := cfg.validate(); verr != nil {
 		logger.Warn("config problem: %v", verr)
 	}
