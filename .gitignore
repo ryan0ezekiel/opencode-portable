@@ -1,0 +1,17 @@
+# Build output — never commit binaries or bundles
+dist/
+
+# Runtime artifacts and logs
+downloads/
+logs/
+*.part
+*.staging
+*.backup
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
